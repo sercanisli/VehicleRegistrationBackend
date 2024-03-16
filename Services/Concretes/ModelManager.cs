@@ -35,7 +35,7 @@ namespace Services.Concretes
                 throw new ArgumentException(errorMessage, nameof(model));
             }
 
-            var entities = await _manager.ModelRepository.GetAllAsync(false);
+            var entities = await GetAllModelsAsync(false);
             foreach (var item in entities)
             {
                 if(item.ModelName==entity.ModelName && item.ModelYear==entity.ModelYear)
@@ -51,12 +51,9 @@ namespace Services.Concretes
 
         public async Task DeleteOneModelAsync(int id, bool trackChanges)
         {
-            var entity = await _manager.ModelRepository.GetByIdAsync(id, trackChanges);
-            if (entity == null)
-            {
-                throw new Exception($"Vehicle with id : {id} could not found");
-            }
-            _manager.ModelRepository.DeleteOneModel(entity);
+            var entity = await GetOneModelAsync(id,trackChanges);
+            var mappedEntity = _mapper.Map<Model>(entity);
+            _manager.ModelRepository.DeleteOneModel(mappedEntity);
             await _manager.SaveChanges();
         }
 
@@ -76,19 +73,14 @@ namespace Services.Concretes
             var entity = await _manager.ModelRepository.GetByIdAsync(id, trackChanges);
             if (entity == null)
             {
-                throw new Exception($"Vehicle with id : {id} could not found");
+                throw new Exception($"Model with id : {id} could not found");
             }
             return _mapper.Map<ModelDto>(entity);
         }
 
         public async Task UpdateOneModelAsync(int id, ModelDto model, bool trackChanges)
         {
-            var entity = await _manager.ModelRepository.GetByIdAsync(id, trackChanges);
-            if (entity == null)
-            {
-                throw new Exception($"Vehicle with id : {id} could not found");
-            }
-
+            var entity = await GetOneModelAsync(id, trackChanges);
             if (model == null)
             {
                 throw new ArgumentNullException(nameof(model));
@@ -97,7 +89,7 @@ namespace Services.Concretes
             var mappedEntity = _mapper.Map<Model>(model);
 
             var validator = new ModelValidator();
-            var result = validator.Validate(entity);
+            var result = validator.Validate(mappedEntity);
 
             if (!result.IsValid)
             {
@@ -105,10 +97,10 @@ namespace Services.Concretes
                 throw new ArgumentException(errorMessage, nameof(model));
             }
 
-            var entities = await _manager.ModelRepository.GetAllAsync(false);
+            var entities = await GetAllModelsAsync(false);
             foreach (var item in entities)
             {
-                if (item.ModelName == entity.ModelName && item.ModelYear == entity.ModelYear)
+                if (item.ModelName == mappedEntity.ModelName && item.ModelYear == mappedEntity.ModelYear)
                 {
                     throw new Exception("This car model already exists");
                 }

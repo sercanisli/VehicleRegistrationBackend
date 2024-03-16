@@ -30,14 +30,13 @@ namespace Services.Concretes
 
             var validator = new BrandValidator();
             var result = validator.Validate(entity);
-
             if (!result.IsValid)
             {
                 var errorMessage = result.Errors.First().ErrorMessage;
                 throw new ArgumentException(errorMessage, nameof(brand));
             }
 
-            var entities = await _manager.BrandRepository.GetAllAsync(false);
+            var entities = await GetAllBrandsAsync(false);
             foreach (var item in entities)
             {
                 if (item.Name == entity.Name)
@@ -53,12 +52,9 @@ namespace Services.Concretes
 
         public async Task DeleteOneBrandAsync(int id, bool trackChanges)
         {
-            var entity = await _manager.BrandRepository.GetByIdAsync(id, trackChanges);
-            if (entity == null)
-            {
-                throw new Exception($"Vehicle with id : {id} could not found");
-            }
-            _manager.BrandRepository.DeleteOneBrand(entity);
+            var entity = await GetOneBrandAsync(id, trackChanges);
+            var mappedEntity = _mapper.Map<Brand>(entity);
+            _manager.BrandRepository.DeleteOneBrand(mappedEntity);
             await _manager.SaveChanges();
         }
 
@@ -73,20 +69,14 @@ namespace Services.Concretes
             var entity = await _manager.BrandRepository.GetByIdAsync(id, trackChanges);
             if (entity == null)
             {
-                throw new Exception($"Vehicle with id : {id} could not found");
+                throw new Exception($"Brand with id : {id} could not found");
             }
             return _mapper.Map<BrandDto>(entity);
         }
 
         public async Task UpdateOneBrandAsync(int id, BrandDto brand, bool trackChanges)
         {
-            var entity = await _manager.BrandRepository.GetByIdAsync(id, trackChanges);
-
-            if (entity == null)
-            {
-                throw new Exception($"Vehicle with id : {id} could not found");
-            }
-
+            var entity = await GetOneBrandAsync(id, trackChanges);
             if (brand == null)
             {
                 throw new ArgumentNullException(nameof(brand));
@@ -95,7 +85,7 @@ namespace Services.Concretes
             var mappedEntity = _mapper.Map<Brand>(brand);
 
             var validator = new BrandValidator();
-            var result = validator.Validate(entity);
+            var result = validator.Validate(mappedEntity);
 
             if (!result.IsValid)
             {
@@ -103,10 +93,10 @@ namespace Services.Concretes
                 throw new ArgumentException(errorMessage, nameof(brand));
             }
 
-            var entities = await _manager.BrandRepository.GetAllAsync(false);
+            var entities = await GetAllBrandsAsync(false);
             foreach (var item in entities)
             {
-                if (item.Name == entity.Name)
+                if (item.Name == mappedEntity.Name)
                 {
                     throw new Exception("BrandName must be uniq");
                 }

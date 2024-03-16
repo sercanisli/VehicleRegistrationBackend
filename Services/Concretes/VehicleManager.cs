@@ -1,9 +1,6 @@
 ﻿using AutoMapper;
 using Entities.DataTransferObjects;
 using Entities.Models;
-using FluentValidation;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
 using Repositories.Contract;
 using Services.Contracts;
 using Services.ValidationRules.FluentValidation;
@@ -28,7 +25,7 @@ namespace Services.Concretes
                 throw new ArgumentNullException(nameof(vehicle));
             }
 
-            var entities = await _manager.VehicleRepository.GetAllAsync(false);
+            var entities = await GetAllVehiclesAsync(false);
             foreach (var item in entities)
             {
                 if (item.Plate == vehicle.Plate)
@@ -54,12 +51,9 @@ namespace Services.Concretes
 
         public async Task DeleteOneVehicleAsync(int id, bool trackChanges)
         {
-            var entity = await _manager.VehicleRepository.GetByIdAsync(id, trackChanges);
-            if(entity == null)
-            {
-                throw new Exception($"Vehicle with id : {id} could not found");
-            }
-            _manager.VehicleRepository.DeleteOneVehicle(entity);
+            var entity = await GetOneVehicleAsync(id, trackChanges);
+            var mappedEntity = _mapper.Map<Vehicle>(entity);
+            _manager.VehicleRepository.DeleteOneVehicle(mappedEntity);
             await _manager.SaveChanges();
         }
 
@@ -85,28 +79,22 @@ namespace Services.Concretes
 
         public async Task UpdateOneVehicleAsync(int id, VehicleDto vehicle, bool trackChanges)
         {
-            var entity = await _manager.VehicleRepository.GetByIdAsync(id, trackChanges);
-
-            if (entity == null)
-            {
-                throw new Exception($"Vehicle with id : {id} could not found");
-            }
-
+            var entity = await GetOneVehicleAsync(id, trackChanges);
             if(vehicle == null)
             {
                 throw new ArgumentNullException(nameof(vehicle));
             }
 
-            var entities = await _manager.VehicleRepository.GetAllAsync(false);
+            var mappedEntity = _mapper.Map<Vehicle>(vehicle);
+
+            var entities = await GetAllVehiclesAsync(false);
             foreach (var item in entities)
             {
-                if (item.Plate == vehicle.Plate)
+                if (item.Plate == mappedEntity.Plate)
                 {
                     throw new Exception("Plate must be uniq");
                 }
             }
-
-            var mappedEntity = _mapper.Map<Vehicle>(vehicle);
 
             var validator = new VehicleValidator();
             var result = validator.Validate(mappedEntity);

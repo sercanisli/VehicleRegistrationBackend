@@ -35,7 +35,7 @@ namespace Services.Concretes
                 throw new ArgumentException(errorMessage, nameof(vehicleType));
             }
 
-            var entities = await _manager.VehicleTypeRepository.GetAllAsync(false);
+            var entities = await GetAllVehicleTypesAsync(false);
             foreach (var item in entities)
             {
                 if (item.TypeName == entity.TypeName)
@@ -51,12 +51,9 @@ namespace Services.Concretes
 
         public async Task DeleteOneVehicleTypeAsync(int id, bool trackChanges)
         {
-            var entity = await _manager.VehicleTypeRepository.GetByIdAsync(id, trackChanges);
-            if(entity == null)
-            {
-                throw new Exception($"Vehicle with id : {id} could not found");
-            }
-            _manager.VehicleTypeRepository.DeleteOneVehicleType(entity);
+            var entity = await GetOneVehicleTypeAsync(id, trackChanges);
+            var mappedEntity = _mapper.Map<VehicleType>(entity);
+            _manager.VehicleTypeRepository.DeleteOneVehicleType(mappedEntity);
             await _manager.SaveChanges();
         }
 
@@ -71,18 +68,14 @@ namespace Services.Concretes
             var entity = await _manager.VehicleTypeRepository.GetByIdAsync(id, trackChanges);
             if (entity == null)
             {
-                throw new Exception($"Vehicle with id : {id} could not found");
+                throw new Exception($"VehicleTpe with id : {id} could not found");
             }
             return _mapper.Map<VehicleTypeDto>(entity);
         }
 
         public async Task UpdateOneVehicleTypeAsync(int id, VehicleTypeDto vehicleType, bool trackChanges)
         {
-            var entity = await _manager.VehicleTypeRepository.GetByIdAsync(id, trackChanges);
-            if (entity == null)
-            {
-                throw new Exception($"Vehicle with id : {id} could not found");
-            }
+            var entity = await GetOneVehicleTypeAsync(id, trackChanges);
 
             if (vehicleType == null)
             {
@@ -92,17 +85,17 @@ namespace Services.Concretes
             var mappedEntity = _mapper.Map<VehicleType>(vehicleType);
 
             var validator = new VehicleTypeValidator();
-            var result = validator.Validate(entity);
+            var result = validator.Validate(mappedEntity);
             if (!result.IsValid)
             {
                 var errorMessage = result.Errors.First().ErrorMessage;
                 throw new ArgumentException(errorMessage, nameof(vehicleType));
             }
 
-            var entities = await _manager.VehicleTypeRepository.GetAllAsync(false);
+            var entities = await GetAllVehicleTypesAsync(false);
             foreach (var item in entities)
             {
-                if (item.TypeName == entity.TypeName)
+                if (item.TypeName == mappedEntity.TypeName)
                 {
                     throw new Exception("TypeName must be uniq");
                 }
